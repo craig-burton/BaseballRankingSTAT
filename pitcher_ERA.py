@@ -84,8 +84,8 @@ for team,num in team_id_dict.iteritems():
     # print(team_count)
 
 
-for r in incidence:
-    print(r)
+# for r in incidence:
+#     print(r)
 
 print('\n'.join([''.join(['{:4}'.format(item) for item in row])
       for row in incidence]))
@@ -104,7 +104,6 @@ def pythagorean_win_loss(team_id,curr_game_dt,look_back=50,power=1.81):
     runs_for = 0
     runs_against = 0
     for index,row in games.iterrows():
-        print(row['GAME_DT'])
         if(row['HOME_TEAM_ID'] == team_id):
             runs_for += row['HOME_SCORE_CT']
             runs_against += row['AWAY_SCORE_CT']
@@ -113,10 +112,59 @@ def pythagorean_win_loss(team_id,curr_game_dt,look_back=50,power=1.81):
             runs_against += row['HOME_SCORE_CT']
     return (runs_for**power)/float(runs_for**power + runs_against**power)
 
+def actual_win_loss(team_id,curr_game_dt,look_back=50):
+        query_home = "select * from games where (home_team_id = '" + team_id \
+            + "' or away_team_id = '" + team_id + "') and game_dt < " + str(curr_game_dt) \
+            + " order by game_dt desc limit " + str(look_back) + ";"
+        print(query_home)
+        games = pd.read_sql(query_home,con=cnx)
+        wins = 0
+        losses = 0
+        for index,row in games.iterrows():
+            if(row['HOME_TEAM_ID'] == team_id):
+                if(row['HOME_SCORE_CT'] > row['AWAY_SCORE_CT']):
+                    wins += 1
+                else:
+                    losses += 1
+            else:
+                if(row['AWAY_SCORE_CT'] > row['HOME_SCORE_CT']):
+                    wins += 1
+                else:
+                    losses += 1
+        return wins/float(wins+losses)
+
 print(pythagorean_win_loss("TEX",20161201,look_back=162,power=2))
+print(actual_win_loss("TEX",20161201,look_back=162))
 
 #Pick 2016 and plot all of teams pythagorean_win_loss
+win_loss = [0 for x in range(len(team_id_dict))]
+pythag = [0 for x in range(len(team_id_dict))]
+line = [.5 for x in range(len(team_id_dict))]
+diff = [0 for x in range(len(team_id_dict))]
+for team, num in team_id_dict.iteritems():
+    win_loss[num] = actual_win_loss(team,20151201,look_back=162)
+    pythag[num] = pythagorean_win_loss(team,20151201,look_back=162,power=2)
+    diff[num] = win_loss[num] - pythag[num]
+style.use('ggplot')
 
+x = sorted(team_id_dict.values())
+plt.scatter(x,win_loss,label="Actual",color='b')
+xticks = sorted(team_id_dict,key=team_id_dict.get)
+plt.scatter(x,pythag,label="Pythagorean",color='r')
+plt.plot(x,line, color='k', linestyle='--', label='.500')
+plt.xticks(x,xticks)
+plt.legend()
+plt.title('Actual vs. Expected Win-Loss 2015')
+
+zero = [0 for i in range(len(team_id_dict))]
+plt.figure()
+print(len(x),len(diff))
+plt.scatter(x,diff,label='Difference',color='g')
+plt.xticks(x,xticks)
+plt.plot(x,zero,color='k',linestyle='--',label='Zero')
+plt.legend()
+plt.title('Difference Between Actual and Expected Win-Loss 2015')
+plt.show()
 
 
 #TODO: Team Hit to Run
