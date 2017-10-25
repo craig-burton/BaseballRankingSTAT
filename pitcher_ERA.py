@@ -6,6 +6,7 @@ import numpy as np
 import networkx
 import csv
 
+np.set_printoptions(linewidth=np.inf)
 
 config = pd.read_csv('config.csv')
 cnx = mysql.connector.connect(user=config.loc[0]['USER'],password=config.loc[0]['PASSWORD'],database=config.loc[0]['DATABASE'])
@@ -25,60 +26,65 @@ team_ids = pd.read_sql(query,con=cnx)
 team_id_dict = {}
 for index,row in team_ids.iterrows():
     team_id_dict[row['home_team_id']] = index
-#     print(row['home_team_id'] + ": " + str(index))
-#
-# incidence = [[0 for x in range(len(team_id_dict))] for y in range(len(team_id_dict))]
-#
-# def update_incidence(array_of_rows):
-#     #if home team won, add 1 to win_loss, if away_team_id won substract 1
-#     if(len(array_of_rows) == 0):
-#         return;
-#     # print(len(array_of_rows))
-#     win_loss = 0
-#     home_team_id = team_id_dict[array_of_rows[0]['HOME_TEAM_ID']]
-#     away_team_id = team_id_dict[array_of_rows[0]['AWAY_TEAM_ID']]
-#     for row in array_of_rows:
-#         if(row['HOME_SCORE_CT'] > row['AWAY_SCORE_CT']):
-#             win_loss += 1
-#         elif(row['HOME_SCORE_CT'] < row['AWAY_SCORE_CT']):
-#             win_loss -= 1
-#     if(win_loss >= 1):
-#         #home team won
-#         incidence[home_team_id][away_team_id] += 1
-#     elif(win_loss < 0):
-#         incidence[away_team_id][home_team_id] += 1
-#     else:
-#         incidence[home_team_id][away_team_id] += .5
-#         incidence[away_team_id][home_team_id] += .5
-#
-# #second step: loop through team's home series
-# for team,num in team_id_dict.items():
-#     #check the teams home series
-#     query = "select * from games where home_team_id = '" \
-#         + team + "' and game_yr = 2016 order by game_dt;"
-#     home_series = pd.read_sql(query,con=cnx)
-#     last_team_played = home_series.loc[0]['AWAY_TEAM_ID']
-#     last_game_dt = 0
-#     last_games = []
-#     team_count = 0
-#     for index,row in home_series.iterrows():
-#         #two cases: played the last team you played, or not
-#         if(row['AWAY_TEAM_ID'] == last_team_played):
-#             #keep adding to the array of last_games
-#             last_games.append(row)
-#             last_game_dt = row['GAME_DT']
-#         else:
-#             #stop adding to the array of last_games
-#             update_incidence(last_games)
-#             team_count += 1
-#             last_game_dt = row['GAME_DT']
-#             last_team_played = row['AWAY_TEAM_ID']
-#             last_games = [row]
-#
-# with open("incidence.csv", "w") as f:
+    print(row['home_team_id'] + ": " + str(index))
+
+incidence = [[0 for x in range(len(team_id_dict))] for y in range(len(team_id_dict))]
+
+def update_incidence(array_of_rows):
+    #if home team won, add 1 to win_loss, if away_team_id won substract 1
+    if(len(array_of_rows) == 0):
+        return;
+    # print(len(array_of_rows))
+    win_loss = 0
+    home_team_id = team_id_dict[array_of_rows[0]['HOME_TEAM_ID']]
+    away_team_id = team_id_dict[array_of_rows[0]['AWAY_TEAM_ID']]
+    for row in array_of_rows:
+        if(row['HOME_SCORE_CT'] > row['AWAY_SCORE_CT']):
+            win_loss += 1
+        elif(row['HOME_SCORE_CT'] < row['AWAY_SCORE_CT']):
+            win_loss -= 1
+    if(win_loss >= 1):
+        #home team won
+        incidence[home_team_id][away_team_id] += 1
+    elif(win_loss < 0):
+        incidence[away_team_id][home_team_id] += 1
+    else:
+        incidence[home_team_id][away_team_id] += .5
+        incidence[away_team_id][home_team_id] += .5
+
+#second step: loop through team's home series
+for team,num in team_id_dict.items():
+    #check the teams home series
+    query = "select * from games where home_team_id = '" \
+        + team + "' and game_yr = 2016 order by game_dt;"
+    home_series = pd.read_sql(query,con=cnx)
+    last_team_played = home_series.loc[0]['AWAY_TEAM_ID']
+    last_game_dt = 0
+    last_games = []
+    team_count = 0
+    for index,row in home_series.iterrows():
+        #two cases: played the last team you played, or not
+        if(row['AWAY_TEAM_ID'] == last_team_played):
+            #keep adding to the array of last_games
+            last_games.append(row)
+            last_game_dt = row['GAME_DT']
+        else:
+            #stop adding to the array of last_games
+            update_incidence(last_games)
+            team_count += 1
+            last_game_dt = row['GAME_DT']
+            last_team_played = row['AWAY_TEAM_ID']
+            last_games = [row]
+
+incidence_np = np.matrix(incidence)
+print(incidence_np)
+# with open("incidence.csv", "w", newline='') as f:
 #     writer = csv.writer(f)
-#     writer.writerow(team_id_dict.keys())
-#     writer.writerows(incidence)
+#     writer.writerow([' '] + team_id_dict.keys())
+#     for i in range(len(team_id_dict)):
+#         for key, value in team_id_dict.items():
+#             if value == i:
+#                 writer.writerow(key + str(incidence[i]))
 
 # print('\n'.join([''.join(['{:4}'.format(item) for item in row])
 #       for row in incidence]))
