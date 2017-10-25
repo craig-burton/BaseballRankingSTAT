@@ -57,7 +57,7 @@ def update_incidence(array_of_rows):
         # print("ITS A TIE home: " + str(home_team_id) + " away: " + str(away_team_id))
 
 #second step: loop through team's home series
-for team,num in team_id_dict.iteritems():
+for team,num in team_id_dict.items():
     #check the teams home series
     query = "select * from games where home_team_id = '" \
         + team + "' and game_yr = 2016 order by game_dt;"
@@ -133,15 +133,15 @@ def actual_win_loss(team_id,curr_game_dt,look_back=50):
                     losses += 1
         return wins/float(wins+losses)
 
-print(pythagorean_win_loss("TEX",20161201,look_back=162,power=2))
-print(actual_win_loss("TEX",20161201,look_back=162))
+# print(pythagorean_win_loss("TEX",20161201,look_back=162,power=2))
+# print(actual_win_loss("TEX",20161201,look_ back=162))
 
 #Pick 2016 and plot all of teams pythagorean_win_loss
 win_loss = [0 for x in range(len(team_id_dict))]
 pythag = [0 for x in range(len(team_id_dict))]
 line = [.5 for x in range(len(team_id_dict))]
 diff = [0 for x in range(len(team_id_dict))]
-for team, num in team_id_dict.iteritems():
+for team, num in team_id_dict.items():
     win_loss[num] = actual_win_loss(team,20151201,look_back=162)
     pythag[num] = pythagorean_win_loss(team,20151201,look_back=162,power=2)
     diff[num] = win_loss[num] - pythag[num]
