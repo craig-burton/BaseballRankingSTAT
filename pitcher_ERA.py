@@ -253,8 +253,8 @@ for i in alphas:
 print(alphas_df)
 
 plt.plot(alphas_df[0],alphas_df["error"])
-plt.xlabel('Error')
-plt.ylabel('Alpha')
+plt.xlabel('Alpha')
+plt.ylabel('Error')
 plt.title('Pythagorean alpha optimization 2015')
 print(alphas_df.loc[alphas_df.idxmin()]) #1.71
 plt.show()
