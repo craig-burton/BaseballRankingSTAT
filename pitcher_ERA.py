@@ -240,33 +240,33 @@ def actual_win_loss_df(team_id,games):
 # # plt.show()
 
 # Compute errors of Pythag to win/loss and minimize using different alphas
-# alphas = np.arange(1,3,.1)
-# alphas_df = pd.DataFrame(alphas)
-# alphas_df["error"] = np.nan
-# print(alphas_df)
-# df_team_dict = {}
-# curr_game_dt = 20151201
-# look_back = 162
-# for team,num in team_id_dict.items():
-#     query = "select * from games where (home_team_id = '" + team \
-#             + "' or away_team_id = '" + team + "') and game_dt < " + str(curr_game_dt) \
-#             + " order by game_dt desc limit " + str(look_back) + ";"
-#     df_team_dict[team] = pd.read_sql(query,con=cnx)
-#
-# for i in alphas:
-#     sum_of_error = 0
-#     print("Alpha=" + str(i))
-#     for team, num in team_id_dict.items():
-#         sum_of_error += (actual_win_loss_df(team,df_team_dict[team]) - pythagorean_win_loss_df(team,df_team_dict[team],i))**2
-#     alphas_df.loc[alphas_df[0] == i,"error"] = sum_of_error
-# print(alphas_df)
-#
-# plt.plot(alphas_df[0],alphas_df["error"])
-# plt.xlabel('Error')
-# plt.ylabel('Alpha')
-# plt.title('Pythagorean alpha optimization 2015')
-# print(alphas_df.loc[alphas_df.idxmin()]) #1.71
-# plt.show()
+alphas = np.arange(1,3,.1)
+alphas_df = pd.DataFrame(alphas)
+alphas_df["error"] = np.nan
+print(alphas_df)
+df_team_dict = {}
+curr_game_dt = 20151201
+look_back = 162
+for team,num in team_id_dict.items():
+    query = "select * from games where (home_team_id = '" + team \
+            + "' or away_team_id = '" + team + "') and game_dt < " + str(curr_game_dt) \
+            + " order by game_dt desc limit " + str(look_back) + ";"
+    df_team_dict[team] = pd.read_sql(query,con=cnx)
+
+for i in alphas:
+    sum_of_error = 0
+    print("Alpha=" + str(i))
+    for team, num in team_id_dict.items():
+        sum_of_error += (actual_win_loss_df(team,df_team_dict[team]) - pythagorean_win_loss_df(team,df_team_dict[team],i))**2
+    alphas_df.loc[alphas_df[0] == i,"error"] = sum_of_error
+print(alphas_df)
+
+plt.plot(alphas_df[0],alphas_df["error"])
+plt.xlabel('Alpha')
+plt.ylabel('Error')
+plt.title('Pythagorean alpha optimization 2015')
+print(alphas_df.loc[alphas_df.idxmin()]) #1.71
+plt.show()
 
 
 
@@ -356,6 +356,7 @@ def create_series_ids(start_date,end_date):
             if(team_against == last_team_played and home_game == last_game_home):
                 #keep adding to the array of last_games
                 last_games.append(row)
+
                 last_game_dt = row['GAME_DT']
             else:
                 #stop adding to the array of last_games
