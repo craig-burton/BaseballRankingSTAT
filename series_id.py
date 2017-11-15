@@ -28,6 +28,7 @@ def create_series_ids(start_date,end_date,cnx,team_id_dict):
         last_game_dt = 0
         last_game_ids = []
         series_count = 0
+        series_id = ""
         last_game_home = (all_series.loc[0,'HOME_TEAM_ID'] == team)
         for index,row in all_series.iterrows():
             #two cases: played the last team you played, or not
@@ -50,6 +51,7 @@ def create_series_ids(start_date,end_date,cnx,team_id_dict):
                 last_team_played = team_against
                 last_game_ids = [row['GAME_ID']]
                 last_game_home = home_game
+            overall_df = update_series_id(last_game_ids,overall_df,series_id,last_game_home)
     return overall_df
 
 
@@ -60,4 +62,5 @@ def update_series_id(last_games,overall_df,series_id,at_home):
     for row in last_games:
         print("Changing the series: " + row + " " + series)
         overall_df.loc[overall_df['GAME_ID'] == row,series] = series_id
+        print("changed to: " + str(overall_df.loc[overall_df['GAME_ID'] == row, series]))
     return overall_df
