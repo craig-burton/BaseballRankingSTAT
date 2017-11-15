@@ -77,7 +77,7 @@ for team,num in team_id_dict.items():
             last_games = [row]
 
 incidence_np = np.matrix(incidence)
-print(incidence_np)
+# print(incidence_np)
 
 def create_incidence(start_date,end_date):
     incidence = [[0 for x in range(len(team_id_dict))] for y in range(len(team_id_dict))]
@@ -104,9 +104,18 @@ def create_incidence(start_date,end_date):
                 last_game_dt = row['GAME_DT']
                 last_team_played = row['AWAY_TEAM_ID']
                 last_games = [row]
+    return incidence
 
-    incidence_np = np.matrix(incidence)
-    return incidence_np
+def create_oracle_incidence(incidence):
+    oracle = np.matrix([[0 for x in range(len(team_id_dict)+1)] for y in range(len(team_id_dict)+1)],dtype=float).A
+    # wins = [0 for x in range(len(team_id_dict))]
+    for i in range(len(incidence)):
+        wins = np.matrix(incidence).sum(1)[i]
+        oracle[i][len(incidence)] = wins+1
+        oracle[len(incidence)][i] = wins+1
+        for j in range(len(incidence)):
+            oracle[i][j] = incidence[i][j]
+    return np.matrix(oracle)
 # with open("incidence.csv", "w", newline='') as f:
 #     writer = csv.writer(f)
 #     writer.writerow([' '] + team_id_dict.keys())
@@ -231,39 +240,39 @@ def actual_win_loss_df(team_id,games):
 # # plt.show()
 
 # Compute errors of Pythag to win/loss and minimize using different alphas
-alphas = np.arange(1,3,.1)
-alphas_df = pd.DataFrame(alphas)
-alphas_df["error"] = np.nan
-print(alphas_df)
-df_team_dict = {}
-curr_game_dt = 20151201
-look_back = 162
-for team,num in team_id_dict.items():
-    query = "select * from games where (home_team_id = '" + team \
-            + "' or away_team_id = '" + team + "') and game_dt < " + str(curr_game_dt) \
-            + " order by game_dt desc limit " + str(look_back) + ";"
-    df_team_dict[team] = pd.read_sql(query,con=cnx)
-
-for i in alphas:
-    sum_of_error = 0
-    print("Alpha=" + str(i))
-    for team, num in team_id_dict.items():
-        sum_of_error += (actual_win_loss_df(team,df_team_dict[team]) - pythagorean_win_loss_df(team,df_team_dict[team],i))**2
-    alphas_df.loc[alphas_df[0] == i,"error"] = sum_of_error
-print(alphas_df)
-
-plt.plot(alphas_df[0],alphas_df["error"])
-plt.xlabel('Error')
-plt.ylabel('Alpha')
-plt.title('Pythagorean alpha optimization 2015')
-print(alphas_df.loc[alphas_df.idxmin()]) #1.71
-plt.show()
+# alphas = np.arange(1,3,.1)
+# alphas_df = pd.DataFrame(alphas)
+# alphas_df["error"] = np.nan
+# print(alphas_df)
+# df_team_dict = {}
+# curr_game_dt = 20151201
+# look_back = 162
+# for team,num in team_id_dict.items():
+#     query = "select * from games where (home_team_id = '" + team \
+#             + "' or away_team_id = '" + team + "') and game_dt < " + str(curr_game_dt) \
+#             + " order by game_dt desc limit " + str(look_back) + ";"
+#     df_team_dict[team] = pd.read_sql(query,con=cnx)
+#
+# for i in alphas:
+#     sum_of_error = 0
+#     print("Alpha=" + str(i))
+#     for team, num in team_id_dict.items():
+#         sum_of_error += (actual_win_loss_df(team,df_team_dict[team]) - pythagorean_win_loss_df(team,df_team_dict[team],i))**2
+#     alphas_df.loc[alphas_df[0] == i,"error"] = sum_of_error
+# print(alphas_df)
+#
+# plt.plot(alphas_df[0],alphas_df["error"])
+# plt.xlabel('Error')
+# plt.ylabel('Alpha')
+# plt.title('Pythagorean alpha optimization 2015')
+# print(alphas_df.loc[alphas_df.idxmin()]) #1.71
+# plt.show()
 
 
 
 #PageRank
 def page_rank(incidence,team_id_dict):
-    incidence = incidence_np.tolist()
+    incidence = incidence.A
     for j in range(len(incidence[0])):
         total = 0
         for i in range(len(incidence)):
@@ -287,18 +296,86 @@ def page_rank(incidence,team_id_dict):
 
     return ranking
 
-
 #Test page ranking model
-incidence = create_incidence(20150101,20150714)
-print(incidence)
-ranking = page_rank(incidence,team_id_dict)
+incidence = create_incidence(20150101,20151231)
+oracle = create_oracle_incidence(incidence)
+print(oracle)
+# print(incidence)
+ranking = page_rank(np.matrix(incidence),team_id_dict)
 ranking_sorted = sorted(ranking,key=ranking.get,reverse=True)
+oracle_r = page_rank(oracle,team_id_dict)
+oracle_r_sorted = sorted(oracle_r,key=oracle_r.get,reverse=True)
 for x in ranking_sorted:
     print x + " " + str(ranking[x])
+
+print("ORACLE DUDE")
+for x in oracle_r_sorted:
+    print x + " " + str(oracle_r[x])
+
+
+
+def update_series_id(last_games,overall_df,series_id,at_home):
+    series = 'AWAY_SERIES_ID'
+    if(at_home):
+        series = 'HOME_SERIES_ID'
+    for row in last_games:
+        overall_df.loc[overall_df['GAME_ID'] == row['GAME_ID'],series] = series_id
+    return overall_df
+
+
+def create_series_ids(start_date,end_date):
+    overall_query = "select * from games where game_dt >= " + str(start_date) + \
+        " and game_dt <= " + str(end_date) + " order by game_dt;"
+    overall_df = pd.read_sql(overall_query,con=cnx)
+    overall_df["AWAY_SERIES_ID"] = np.nan
+    overall_df["HOME_SERIES_ID"] = np.nan
+    #add columns for series_id, home and away
+    for team,num in team_id_dict.items():
+        query = "select * from games where (home_team_id = '" \
+            + team + "' or away_team_id = '" + team + "') and game_dt >= " \
+            + str(start_date) + \
+            " and game_dt <= " + str(end_date) + \
+             " order by game_dt;"
+        print(query)
+        all_series = pd.read_sql(query,con=cnx)
+        print("Total games: " + str(len(all_series.index)))
+        last_team_played = all_series.loc[0,'AWAY_TEAM_ID']
+        if(last_team_played == team):
+            last_team_played = all_series.loc[0,'HOME_TEAM_ID']
+        last_game_dt = 0
+        last_games = []
+        series_count = 0
+        last_game_home = (all_series.loc[0,'HOME_TEAM_ID'] == team)
+        for index,row in all_series.iterrows():
+            #two cases: played the last team you played, or not
+            home_game = (row['HOME_TEAM_ID'] == team)
+            print(row['HOME_TEAM_ID'] + " " + row['AWAY_TEAM_ID'])
+            team_against = row['HOME_TEAM_ID']
+            if(home_game):
+                team_against = row['AWAY_TEAM_ID']
+            if(team_against == last_team_played and home_game == last_game_home):
+                #keep adding to the array of last_games
+                last_games.append(row)
+                last_game_dt = row['GAME_DT']
+            else:
+                #stop adding to the array of last_games
+                if(len(last_games) > 0):
+                    series_count += 1
+                series_id = str(team) + str(series_count)
+                print("Series ID: " + series_id)
+                overall_df = update_series_id(last_games,overall_df,series_id,last_game_home)
+                last_game_dt = row['GAME_DT']
+                last_team_played = row['AWAY_TEAM_ID']
+                last_games = [row]
+    return overall_df
 
 #Next make predictions based on these rankings
 #predict a game, save the result, update the incidence matrix using the actual result
 
+print(create_series_ids(20150101,20151231))
+
+#TODO to get true Oracle ranking:
+#Divide ranking by (1-Or) where Or is the last element in the ranking vector
 
 
 
