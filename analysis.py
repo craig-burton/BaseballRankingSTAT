@@ -106,11 +106,11 @@ def main():
     oracle_r = incidence_ops.page_rank(oracle,team_id_dict)
     oracle_r_sorted = sorted(oracle_r,key=oracle_r.get,reverse=True)
     for x in ranking_sorted:
-        print x + " " + str(ranking[x])
+        print(x + " " + str(ranking[x]))
 
     print("ORACLE DUDE")
     for x in oracle_r_sorted:
-        print x + " " + str(oracle_r[x])
+        print(x + " " + str(oracle_r[x]))
 
     #Next make predictions based on these rankings
     #predict a game, save the result, update the incidence matrix using the actual result

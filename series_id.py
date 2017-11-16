@@ -60,7 +60,5 @@ def update_series_id(last_games,overall_df,series_id,at_home):
     if(at_home):
         series = 'HOME_SERIES_ID'
     for row in last_games:
-        print("Changing the series: " + row + " " + series)
         overall_df.loc[overall_df['GAME_ID'] == row,series] = series_id
-        print("changed to: " + str(overall_df.loc[overall_df['GAME_ID'] == row, series]))
     return overall_df
