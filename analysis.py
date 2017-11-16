@@ -5,10 +5,13 @@ import mysql.connector
 import numpy as np
 import networkx
 import csv
+from sqlalchemy import create_engine
+
 ##Custom imports
 import incidence_ops
 import win_loss_ops
 import series_id
+import predictions
 
 def plot_alphas(team_id_dict,cnx):
     alphas = np.arange(1,3,.1)
@@ -88,6 +91,7 @@ def create_team_ids(cnx,year):
     return team_id_dict
 
 def main():
+
     np.set_printoptions(linewidth=np.inf)
 
     config = pd.read_csv('config.csv')
@@ -115,17 +119,18 @@ def main():
     #Next make predictions based on these rankings
     #predict a game, save the result, update the incidence matrix using the actual result
 
-    print(series_id.create_series_ids(20150101,20151231,cnx,team_id_dict))
+    min_num = 20160000;
+    max_num = 20161210;
+    # df_all_series_id = series_id.create_series_ids(min_num,max_num,cnx,team_id_dict)
+    # print("Done with the series_id")
+    # df_series = series_id.create_series_dataframe(min_num,max_num,cnx,team_id_dict)
+    # print(df_series.sort_values('END_DATE'))
+
+    print(predictions.predict_oracle(min_num,max_num,cnx,team_id_dict))
+    print(predictions.predict_page_rank(min_num,max_num,cnx,team_id_dict))
 
 if __name__ == '__main__':
     main()
-
-
-
-
-#TODO to get true Oracle ranking:
-#Divide ranking by (1-Or) where Or is the last element in the ranking vector
-
 
 
 

@@ -73,16 +73,17 @@ def page_rank(incidence,team_id_dict):
 
     stochastic = np.matrix(incidence)
     new = np.matrix(incidence)
-    old = new
-    converged = False
-    count = 0
-    while (converged == False):
-        old = new
+    # old = new
+    # converged = False
+    # count = 0
+    # while (converged == False):
+    #     old = new
+    #     new = new * stochastic
+    #     converged = np.allclose(new,old,rtol=.0000001)
+    #     count += 1
+    # print("Page rank multiplied " + str(count) + " times.")
+    for i in range(5000):
         new = new * stochastic
-        converged = np.allclose(new,old,rtol=.000000001)
-        count += 1
-    print("Page rank multiplied " + str(count) + " times.")
-
 
     ranking = {}
     final = new.A
