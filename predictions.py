@@ -7,7 +7,7 @@ import numpy as np
 import series_id
 import incidence_ops
 
-def predict_oracle(start_date,end_date,cnx,team_id_dict,tolerance=0.001):
+def predict_oracle(start_date,end_date,cnx,team_id_dict,tolerance=0.00001):
     series = series_id.create_series_dataframe(start_date,end_date,cnx,team_id_dict)
     incidence = [[0 for x in range(len(team_id_dict))] for y in range(len(team_id_dict))]
     oracle = incidence_ops.create_oracle_incidence(incidence,team_id_dict)
@@ -28,9 +28,10 @@ def predict_oracle(start_date,end_date,cnx,team_id_dict,tolerance=0.001):
         # else:
             # print("Wrong :(")
 
+        #Update the incidence and ranking
         if(row['HOME_WIN'] == 1):
             incidence[team_id_dict[home_team]][team_id_dict[away_team]] += 1
-        elif(row['HOME_WIN'] == 0):
+        elif(row['HOME_WIN'] == 0.5):
             incidence[team_id_dict[home_team]][team_id_dict[away_team]] += .5
             incidence[team_id_dict[away_team]][team_id_dict[home_team]] += .5
         else:
@@ -76,7 +77,13 @@ def predict_page_rank(start_date,end_date,cnx,team_id_dict,tolerance=0.001):
         #     print(x + " " + str(oracle_r[x]))
     return correct_num/float(len(series))
 
-
+#TODO: Pythagorean WL
+#TODO: W/L
+#TODO: Colley
+#TODO: Massey
+#TODO: Elo w/ a sliding window
+#TODO: Biased Voter
+#TODO: Keener
 
 
 

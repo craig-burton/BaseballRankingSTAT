@@ -119,8 +119,8 @@ def main():
     #Next make predictions based on these rankings
     #predict a game, save the result, update the incidence matrix using the actual result
 
-    min_num = 20160000;
-    max_num = 20161210;
+    min_num = 20140000;
+    max_num = 20141210;
     # df_all_series_id = series_id.create_series_ids(min_num,max_num,cnx,team_id_dict)
     # print("Done with the series_id")
     # df_series = series_id.create_series_dataframe(min_num,max_num,cnx,team_id_dict)
