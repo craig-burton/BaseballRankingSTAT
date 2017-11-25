@@ -102,3 +102,13 @@ def create_oracle_incidence(incidence,team_id_dict):
         for j in range(len(incidence)):
             oracle[i][j] = incidence[i][j]
     return np.matrix(oracle)
+
+def create_oracle_incidence_win_diff(incidence,team_id_dict,win_diff):
+    oracle = np.matrix([[0 for x in range(len(team_id_dict)+1)] for y in range(len(team_id_dict)+1)],dtype=float).A
+    for i in range(len(incidence)):
+        wins = np.matrix(incidence).sum(1)[i]
+        oracle[i][len(incidence)] = win_diff[i]+1
+        oracle[len(incidence)][i] = wins+1
+        for j in range(len(incidence)):
+            oracle[i][j] = incidence[i][j]
+    return np.matrix(oracle)

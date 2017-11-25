@@ -108,21 +108,27 @@ def update_series_id(last_games,overall_df,series_id,at_home):
 #returns 1 if home_team won series, 0 if away won, .5 if tied
 def determine_win_loss_series(games):
     home_w = 0
+    home_runs = 0
+    away_runs = 0
     for row in games:
         if(row['HOME_SCORE_CT'] > row['AWAY_SCORE_CT']):
             home_w += 1
-    if(home_w > len(games) - home_w):
-        return 1
-    elif(home_w < len(games) - home_w):
-        return 0
+        home_runs += row['HOME_SCORE_CT']
+        away_runs += row['AWAY_SCORE_CT']
+    away_w = len(games) - home_w
+    if(home_w > away_w):
+        return (1,home_runs,away_runs,home_w,away_w)
+    elif(home_w < away_w):
+        return (0,home_runs,away_runs,home_w,away_w)
     else:
-        return .5
+        return (1,home_runs,away_runs,home_w,away_w)
 
 def update_series_df(last_games,overall_df):
     win_loss_home = determine_win_loss_series(last_games)
-    overall_df = overall_df.append({'HOME_WIN':win_loss_home,'AWAY_TEAM_ID':last_games[0]['AWAY_TEAM_ID'] \
+    overall_df = overall_df.append({'HOME_WIN':win_loss_home[0],'AWAY_TEAM_ID':last_games[0]['AWAY_TEAM_ID'] \
         ,'HOME_TEAM_ID':last_games[0]['HOME_TEAM_ID'],'END_DATE':int(last_games[len(last_games)-1]['GAME_DT'])
-        ,'NUM_GAMES':len(last_games)}\
+        ,'NUM_GAMES':len(last_games),'HOME_RUNS':win_loss_home[1],'AWAY_RUNS':win_loss_home[2]\
+        ,'HOME_WINS':win_loss_home[3],'AWAY_WINS':win_loss_home[4]}\
         ,ignore_index=True)
     return overall_df
 

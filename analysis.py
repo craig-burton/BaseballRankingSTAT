@@ -40,8 +40,31 @@ def plot_alphas(team_id_dict,cnx):
     plt.xlabel('Alpha')
     plt.ylabel('Error')
     plt.title('Pythagorean alpha optimization 2015')
-    print(alphas_df.loc[alphas_df.idxmin()]) #1.71
+    print(alphas_df.loc[alphas_df.min()[1] == alphas_df["error"]][0]) #1.71
     plt.show()
+
+def optimize_alpha(team_id_dict,year,cnx,interval=.1):
+    alphas = np.arange(1,3,interval)
+    alphas_df = pd.DataFrame(alphas)
+    alphas_df["error"] = np.nan
+    df_team_dict = {}
+    curr_game_dt = year * 10000 + 1201
+    look_back = 162
+    for team,num in team_id_dict.items():
+        query = "select * from games where (home_team_id = '" + team \
+                + "' or away_team_id = '" + team + "') and game_dt < " + str(curr_game_dt) \
+                + " order by game_dt desc limit " + str(look_back) + ";"
+        df_team_dict[team] = pd.read_sql(query,con=cnx)
+
+    for i in alphas:
+        sum_of_error = 0
+        print("Alpha=" + str(i))
+        for team, num in team_id_dict.items():
+            sum_of_error += (win_loss_ops.actual_win_loss_df(team,df_team_dict[team]) \
+                    - win_loss_ops.pythagorean_win_loss_df(team,df_team_dict[team],i))**2
+        alphas_df.loc[alphas_df[0] == i,"error"] = sum_of_error
+    return alphas_df.loc[alphas_df.min()[1] == alphas_df["error"],0].values[0]
+
 
 def plot_win_loss(team_id_dict,cnx):
     win_loss = [0 for x in range(len(team_id_dict))]
@@ -119,15 +142,18 @@ def main():
     #Next make predictions based on these rankings
     #predict a game, save the result, update the incidence matrix using the actual result
 
-    min_num = 20140000;
-    max_num = 20141210;
+    min_num = 20100000;
+    max_num = 20101210;
     # df_all_series_id = series_id.create_series_ids(min_num,max_num,cnx,team_id_dict)
     # print("Done with the series_id")
     # df_series = series_id.create_series_dataframe(min_num,max_num,cnx,team_id_dict)
     # print(df_series.sort_values('END_DATE'))
 
+    # print(optimize_alpha(team_id_dict,2015,cnx))
+    # print(predictions.predict_pythagorean_w_l(min_num,max_num,cnx,team_id_dict))
+    # print(predictions.predict_w_l(min_num,max_num,cnx,team_id_dict))
     print(predictions.predict_oracle(min_num,max_num,cnx,team_id_dict))
-    print(predictions.predict_page_rank(min_num,max_num,cnx,team_id_dict))
+    # print(predictions.predict_page_rank(min_num,max_num,cnx,team_id_dict))
 
 if __name__ == '__main__':
     main()
