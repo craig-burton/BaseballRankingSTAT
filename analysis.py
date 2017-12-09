@@ -7,12 +7,15 @@ import networkx
 import csv
 from sqlalchemy import create_engine
 
-##Custom imports
+#Custom imports
 import incidence_ops
 import win_loss_ops
 import series_id
 import predictions
 
+#This is the main file for running analyses
+
+#Plot the optimized alpha for Pythagorean win loss
 def plot_alphas(team_id_dict,cnx):
     alphas = np.arange(1,3,.1)
     alphas_df = pd.DataFrame(alphas)
@@ -43,6 +46,7 @@ def plot_alphas(team_id_dict,cnx):
     print(alphas_df.loc[alphas_df.min()[1] == alphas_df["error"]][0]) #1.71
     plt.show()
 
+#Optimize the alpha for Pythagorean win loss
 def optimize_alpha(team_id_dict,year,cnx,interval=.1):
     alphas = np.arange(1,3,interval)
     alphas_df = pd.DataFrame(alphas)
@@ -66,14 +70,15 @@ def optimize_alpha(team_id_dict,year,cnx,interval=.1):
     return alphas_df.loc[alphas_df.min()[1] == alphas_df["error"],0].values[0]
 
 
-def plot_win_loss(team_id_dict,cnx):
+#Plot win loss for teams given a date
+def plot_win_loss(team_id_dict,cnx,end_date=20151201):
     win_loss = [0 for x in range(len(team_id_dict))]
     pythag = [0 for x in range(len(team_id_dict))]
     line = [.5 for y in range(len(team_id_dict))]
     diff = [0 for x in range(len(team_id_dict))]
     for team, num in team_id_dict.items():
-        win_loss[num] = win_loss_ops.actual_win_loss(team,20151201,cnx,look_back=162)
-        pythag[num] = win_loss_ops.pythagorean_win_loss(team,20151201,cnx,look_back=162,power=2)
+        win_loss[num] = win_loss_ops.actual_win_loss(team,end_date,cnx,look_back=162)
+        pythag[num] = win_loss_ops.pythagorean_win_loss(team,end_date,cnx,look_back=162,power=2)
         diff[num] = win_loss[num] - pythag[num]
     style.use('ggplot')
 
@@ -104,6 +109,7 @@ def plot_win_loss(team_id_dict,cnx):
     plt.title('Difference Between Actual and Expected Win-Loss 2015')
     plt.show()
 
+#Create a dictionary of team ids
 def create_team_ids(cnx,year):
     query = "select distinct home_team_id from games where game_yr = " + str(year) + " order by home_team_id;"
     team_ids = pd.read_sql(query,con=cnx)
@@ -144,24 +150,19 @@ def main():
 
     min_num = 20100000;
     max_num = 20101210;
-    # df_all_series_id = series_id.create_series_ids(min_num,max_num,cnx,team_id_dict)
-    # print("Done with the series_id")
-    # df_series = series_id.create_series_dataframe(min_num,max_num,cnx,team_id_dict)
-    # print(df_series.sort_values('END_DATE'))
 
-    # print(optimize_alpha(team_id_dict,2015,cnx))
-    # print(predictions.predict_pythagorean_w_l(min_num,max_num,cnx,team_id_dict))
-    # print(predictions.predict_w_l(min_num,max_num,cnx,team_id_dict))
-    print(predictions.predict_oracle(min_num,max_num,cnx,team_id_dict))
-    # print(predictions.predict_page_rank(min_num,max_num,cnx,team_id_dict))
+    predictions_lst = {'Oracle':[],'Pythagorean':[],'WinLoss':[],'PageRank':[]}
+    for i in range(6):
+        predictions_lst['Pythagorean'].append(predictions.predict_pythagorean_w_l(min_num,max_num,cnx,team_id_dict))
+        predictions_lst['WinLoss'].append(predictions.predict_w_l(min_num,max_num,cnx,team_id_dict))
+        predictions_lst['Oracle'].append(predictions.predict_oracle(min_num,max_num,cnx,team_id_dict))
+        predictions_lst['PageRank'].append(predictions.predict_page_rank(min_num,max_num,cnx,team_id_dict))
+        min_num += 10000
+        max_num += 10000
+    for x in predictions_lst:
+        print(x)
+        predictions_lst[x] = sum(predictions_lst[x])/float(len(predictions_lst[x]))
+    print(predictions_lst)
 
 if __name__ == '__main__':
     main()
-
-
-
-
-
-
-
-#EOF

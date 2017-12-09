@@ -1,22 +1,30 @@
 import pandas as pd
-import matplotlib.pyplot as plt
-from matplotlib import style
-import mysql.connector
 import numpy as np
 #Custom
 import series_id
 import incidence_ops
 import analysis
 
+#Predict games using the Oracle method (created by Dr. Eduardo Balreira)
 def predict_oracle(start_date,end_date,cnx,team_id_dict,tolerance=0.00001,window=200):
     series = series_id.create_series_dataframe(start_date,end_date,cnx,team_id_dict)
     incidence = [[0 for x in range(len(team_id_dict))] for y in range(len(team_id_dict))]
+
+    #Initial Oracle matrix and ranking
     oracle = incidence_ops.create_oracle_incidence(incidence,team_id_dict)
     oracle_r = incidence_ops.page_rank(oracle,team_id_dict)
+
+    #Keep track of how many we got correct
+    #Currently not predicting ties, but merely treating tie as home team win
+    #Ties are still used in the ranking however.
     correct_num = 0
     count = 0
     num_predicted = 0
+
+    #Use win_diff for the edges from the Oracle to the team
     win_diff = [0 for x in range(len(team_id_dict))]
+
+    #Start predicting series
     for index,row in series.iterrows():
         home_team = row['HOME_TEAM_ID']
         away_team = row['AWAY_TEAM_ID']
@@ -25,16 +33,12 @@ def predict_oracle(start_date,end_date,cnx,team_id_dict,tolerance=0.00001,window
             num_predicted += 1
             if(abs(oracle_r[home_team] - oracle_r[away_team]) <= tolerance and row['NUM_GAMES']%2 == 0):
                 predict = 1.0
-                # print("Predicted tie!")
             elif(oracle_r[home_team] > oracle_r[away_team]):
                 predict = 1.0
             if(predict == row['HOME_WIN']):
                 correct_num += 1
-                # print("Right!")
-            # else:
-                # print("Wrong :(")
 
-            #Update the incidence and ranking
+        #Update the incidence matrix with actual results
         count += 1
         if(row['HOME_WIN'] == 1):
             incidence[team_id_dict[home_team]][team_id_dict[away_team]] += 1
@@ -46,11 +50,9 @@ def predict_oracle(start_date,end_date,cnx,team_id_dict,tolerance=0.00001,window
             incidence[team_id_dict[away_team]][team_id_dict[home_team]] += 1
             win_diff[team_id_dict[away_team]] += row['NUM_GAMES'] - 2*row['HOME_WINS']
 
+        #Update Oracle matrix and ranking
         oracle = incidence_ops.create_oracle_incidence_win_diff(incidence,team_id_dict,win_diff)
         oracle_r = incidence_ops.page_rank(oracle,team_id_dict)
-        # print("New rankings: ")
-        # for x in sorted(oracle_r,key=oracle_r.get,reverse=True):
-        #     print(x + " " + str(oracle_r[x]))
     return correct_num/float(num_predicted)
 
 
@@ -85,6 +87,7 @@ def predict_page_rank(start_date,end_date,cnx,team_id_dict,tolerance=0.001,windo
         count += 1
     return correct_num/float(num_predicted)
 
+#Computes pythagorean_win_loss
 def get_py_wl(team,team_id_runs,power):
     runs_for = team_id_runs[team][0]
     runs_against = team_id_runs[team][1]
@@ -152,16 +155,3 @@ def predict_w_l(start_date,end_date,cnx,team_id_dict,window=200,interval_alpha=.
         team_id_wins[away_team][1] += row['NUM_GAMES']
         count += 1
     return correct_num/float(num_predicted)
-
-#TODO: Pythagorean WL Prediction
-
-
-
-
-
-
-
-
-
-
-#EOF

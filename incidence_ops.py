@@ -1,13 +1,8 @@
 import pandas as pd
-import matplotlib.pyplot as plt
-from matplotlib import style
-import mysql.connector
 import numpy as np
-import networkx
-import csv
 
 
-
+#This file contains methods for dealing with the incidence matrix
 def update_incidence(array_of_rows,incidence,team_id_dict):
     #if home team won, add 1 to win_loss, if away_team_id won substract 1
     if(len(array_of_rows) == 0):
@@ -73,15 +68,6 @@ def page_rank(incidence,team_id_dict):
 
     stochastic = np.matrix(incidence)
     new = np.matrix(incidence)
-    # old = new
-    # converged = False
-    # count = 0
-    # while (converged == False):
-    #     old = new
-    #     new = new * stochastic
-    #     converged = np.allclose(new,old,rtol=.0000001)
-    #     count += 1
-    # print("Page rank multiplied " + str(count) + " times.")
     for i in range(5000):
         new = new * stochastic
 
